@@ -1,3 +1,6 @@
+// by Matt Gaidica
+// the Adafruit Feather MO uploads better if double clicking the power button first (bootloader mode)
+
 #include <Wire.h>
 #include <SD.h>
 #include <SPI.h>
@@ -23,7 +26,7 @@
 #define CHANNEL_SEL 0x11
 #define AUTO_SEQ_CH_SEL 0x12
 
-#define LOOP_DELAY 1000  // ie, sampling rate
+#define LOOP_DELAY 10000  // ie, sampling rate
 
 uint8_t ADDRESS_0 = 0x13;
 uint8_t ADDRESS_1 = 0x14;
@@ -120,11 +123,13 @@ bool readAndLogData(uint8_t address, uint16_t* bufferArray, uint8_t trodeId) {
     Serial.print(buffer);
     if (CHANNEL < 6) {
       Serial.print(", ");
+    } else {
+      Serial.println();
     }
   }
 
   // Log data to SD card
-  File dataFile = SD.open("data.txt", FILE_WRITE);
+  File dataFile = SD.open(filename, FILE_WRITE);
   if (dataFile) {
     dataFile.print(millis());
     dataFile.print(",");
@@ -141,6 +146,7 @@ bool readAndLogData(uint8_t address, uint16_t* bufferArray, uint8_t trodeId) {
     dataFile.close();
   } else {
     Serial.println(", Error opening data file");
+    digitalWrite(LED_BUILTIN, HIGH);  // Red LEDs on solid means no logging
   }
 
   return true;
@@ -148,9 +154,8 @@ bool readAndLogData(uint8_t address, uint16_t* bufferArray, uint8_t trodeId) {
 
 void loop() {
   bool gotData = false;
-  if(readAndLogData(ADDRESS_0, buffer0, 0)) {
-    Serial.println();
-  }
+  ReadBatteryLevel();
+  readAndLogData(ADDRESS_0, buffer0, 0);
   readAndLogData(ADDRESS_1, buffer1, 1);
   delay(LOOP_DELAY);  // Wait for 100 milliseconds before repeating
 }
